@@ -1,33 +1,81 @@
-const fastifyOptions = require('./config/fastifyOptions');
-const fastify = require('fastify')(fastifyOptions);
-
-const cors = require('fastify-cors');
-const helmet = require('fastify-helmet');
-const swagger = require('fastify-swagger');
+const express = require('express');
 const dotenv = require('dotenv');
 
-const swaggerOptions = require('./config/swaggerOptions');
+// Import middlewares
+const helmet = require('helmet');
+const cors = require('cors');
+const mongoSanitize = require('express-mongo-sanitize');
+const errorHandler = require('./middlewares/errors');
+
+// Import success response class
+const SuccessResponse = require('./utils/successResponse');
+
+// Import mongo client
+const client = require('./config/mongoClient');
+
+// Initialze app
+const app = express();
+
+// Configure dotenv
 const envOptions = require('./config/envOptions');
-
 dotenv.config(envOptions);
-fastify.register(cors);
-fastify.register(helmet);
-fastify.register(swagger, swaggerOptions);
 
-fastify.get('/', async (req, res) => {
-  return { message: 'Server is running' };
+// Use CORS
+app.use(cors());
+
+// Use helmet
+app.use(helmet());
+
+// Use express json parser
+app.use(express.json());
+
+// Sanitize mongodb data
+app.use(mongoSanitize());
+
+app.get('/', async (req, res) => {
+  collection = db.collection('users');
+  const data = await collection.find({ name: 'parth' }).toArray();
+  res.status(200).json(new SuccessResponse('healthy', res.statusCode, data));
 });
 
-const start = async () => {
-  const port = process.env.PORT || 5000;
+app.post('/', async (req, res) => {
+  collection = db.collection('users');
+  const data = await collection.insertOne({ name: 'dherya' });
+  res.status(200).json(new SuccessResponse('healthy', res.statusCode, data));
+});
+
+// Use error handler
+app.use(errorHandler);
+
+const port = process.env.PORT || 5000;
+
+let db;
+
+async function connectMongoDB() {
   try {
-    await fastify.listen(port);
-    console.log(`Server listening at port ${port}`);
+    // Connect the client to the server
+    await client.connect();
+    // Establish and verify connection
+    await client.db('admin').command({ ping: 1 });
+    db = await client.db(process.env.MONGO_DB_NAME);
+    console.log('Connected successfully to server: express');
   } catch (err) {
-    fastify.log.error(err);
+    console.error(err.message);
     process.exit(1);
   }
-};
-start();
+}
+
+connectMongoDB().then(() =>
+  app.listen(port, () =>
+    console.log(`Listening on port ${port} in ${process.env.NODE_ENV} mode`)
+  )
+);
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  console.error(`Error [UHP]: ${err.message}`);
+  // Close server connection
+  process.exit(1);
+});
 
 // End all

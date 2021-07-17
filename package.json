@@ -12,11 +12,13 @@
     "dev": "nodemon start"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^10.0.0",
-    "fastify": "^3.19.1",
-    "fastify-cors": "^6.0.2",
-    "fastify-helmet": "^5.3.2",
-    "fastify-swagger": "^4.8.3"
+    "express": "^4.17.1",
+    "express-mongo-sanitize": "^2.1.0",
+    "helmet": "^4.6.0",
+    "jsonwebtoken": "^8.5.1",
+    "mongodb": "^4.0.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.12"
