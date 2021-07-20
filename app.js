@@ -31,13 +31,13 @@ app.use(express.json());
 // Sanitize mongodb data
 app.use(mongoSanitize());
 
-// app.use((req, res, next) => {
-//   if (!db) {
-//     res.send(new ErrorResponse('Connecting to network', 500));
-//   } else {
-//     next();
-//   }
-// });
+app.use((req, res, next) => {
+  if (!mongoUtil.getDB()) {
+    res.send(new ErrorResponse('Connecting to network', 500));
+  } else {
+    next();
+  }
+});
 
 app.get('/', async (req, res) => {
   try {
