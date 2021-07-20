@@ -3,6 +3,7 @@ class ErrorResponse {
     this.statusCode = statusCode;
     this.data = null;
     this.error = message;
+    this.message = null;
   }
 }
 

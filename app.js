@@ -10,14 +10,13 @@ const errorHandler = require('./middlewares/errors');
 // Import success response class
 const SuccessResponse = require('./utils/successResponse');
 
-// Import mongo client
-const client = require('./config/mongoClient');
-
 // Initialze app
 const app = express();
 
 // Configure dotenv
 const envOptions = require('./config/envOptions');
+const ErrorResponse = require('./utils/errorResponse');
+const mongoUtil = require('./utils/mongoUtil');
 dotenv.config(envOptions);
 
 // Use CORS
@@ -32,10 +31,23 @@ app.use(express.json());
 // Sanitize mongodb data
 app.use(mongoSanitize());
 
+// app.use((req, res, next) => {
+//   if (!db) {
+//     res.send(new ErrorResponse('Connecting to network', 500));
+//   } else {
+//     next();
+//   }
+// });
+
 app.get('/', async (req, res) => {
-  collection = db.collection('users');
-  const data = await collection.find({ name: 'parth' }).toArray();
-  res.status(200).json(new SuccessResponse('healthy', res.statusCode, data));
+  try {
+    collection = mongoUtil.getDB().collection('users');
+    const data = await collection.find({}).toArray();
+    res.status(200).json(new SuccessResponse('healthy', res.statusCode, data));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json(new ErrorResponse(error.message, 500));
+  }
 });
 
 app.post('/', async (req, res) => {
@@ -49,27 +61,10 @@ app.use(errorHandler);
 
 const port = process.env.PORT || 5000;
 
-let db;
-
-async function connectMongoDB() {
-  try {
-    // Connect the client to the server
-    await client.connect();
-    // Establish and verify connection
-    await client.db('admin').command({ ping: 1 });
-    db = await client.db(process.env.MONGO_DB_NAME);
-    console.log('Connected successfully to server: express');
-  } catch (err) {
-    console.error(err.message);
-    process.exit(1);
-  }
-}
-
-connectMongoDB().then(() =>
-  app.listen(port, () =>
-    console.log(`Listening on port ${port} in ${process.env.NODE_ENV} mode`)
-  )
+app.listen(port, () =>
+  console.log(`Listening on port ${port} in ${process.env.NODE_ENV} mode`)
 );
+mongoUtil.connectMongoDB();
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
