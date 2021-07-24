@@ -10,6 +10,9 @@ const errorHandler = require('./middlewares/errors');
 // Import success response class
 const SuccessResponse = require('./utils/successResponse');
 
+// Import routes
+const routes = require(`./routes`);
+
 // Initialze app
 const app = express();
 
@@ -17,6 +20,7 @@ const app = express();
 const envOptions = require('./config/envOptions');
 const ErrorResponse = require('./utils/errorResponse');
 const mongoUtil = require('./utils/mongoUtil');
+const asyncHandler = require('./middlewares/async');
 dotenv.config(envOptions);
 
 // Use CORS
@@ -39,22 +43,16 @@ app.use((req, res, next) => {
   }
 });
 
-app.get('/', async (req, res) => {
-  try {
+app.get(
+  '/',
+  asyncHandler(async (req, res) => {
     collection = mongoUtil.getDB().collection('users');
     const data = await collection.find({}).toArray();
     res.status(200).json(new SuccessResponse('healthy', res.statusCode, data));
-  } catch (error) {
-    console.error(error);
-    res.status(500).json(new ErrorResponse(error.message, 500));
-  }
-});
+  })
+);
 
-app.post('/', async (req, res) => {
-  collection = db.collection('users');
-  const data = await collection.insertOne({ name: 'dherya' });
-  res.status(200).json(new SuccessResponse('healthy', res.statusCode, data));
-});
+app.use('/api/v1', routes);
 
 // Use error handler
 app.use(errorHandler);
