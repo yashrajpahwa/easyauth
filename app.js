@@ -7,9 +7,6 @@ const cors = require('cors');
 const mongoSanitize = require('express-mongo-sanitize');
 const errorHandler = require('./middlewares/errors');
 
-// Import success response class
-const SuccessResponse = require('./utils/successResponse');
-
 // Import routes
 const routes = require(`./routes`);
 
@@ -20,7 +17,6 @@ const app = express();
 const envOptions = require('./config/envOptions');
 const ErrorResponse = require('./utils/errorResponse');
 const mongoUtil = require('./utils/mongoUtil');
-const asyncHandler = require('./middlewares/async');
 dotenv.config(envOptions);
 
 // Use CORS
@@ -37,20 +33,11 @@ app.use(mongoSanitize());
 
 app.use((req, res, next) => {
   if (!mongoUtil.getDB()) {
-    res.send(new ErrorResponse('Connecting to network', 500));
+    res.send(new ErrorResponse('Connecting to network', res));
   } else {
     next();
   }
 });
-
-app.get(
-  '/',
-  asyncHandler(async (req, res) => {
-    collection = mongoUtil.getDB().collection('users');
-    const data = await collection.find({}).toArray();
-    res.status(200).json(new SuccessResponse('healthy', res.statusCode, data));
-  })
-);
 
 app.use('/api/v1', routes);
 

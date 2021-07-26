@@ -1,6 +1,6 @@
 class ErrorResponse {
-  constructor(message, statusCode) {
-    this.statusCode = statusCode;
+  constructor(message, res) {
+    this.statusCode = res.statusCode;
     this.data = null;
     this.error = message;
     this.message = null;
