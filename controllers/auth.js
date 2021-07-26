@@ -10,6 +10,9 @@ const fs = require('fs');
 const sessionTokenPrivateKey = fs.readFileSync(
   'config/sessionTokenKeys/private.key'
 );
+const sessionTokenPublicKey = fs.readFileSync(
+  'config/sessionTokenKeys/public.key'
+);
 
 // @desc Register new user
 // @route POST /api/v1/auth/register
@@ -22,7 +25,7 @@ exports.registerUser = asyncHandler(async (req, res, next) => {
     return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
   }
   const collection = mongoUtil.getDB().collection('users');
-  const user = collection.findOne({ email });
+  const user = await collection.findOne({ email });
   if (user) {
     return res
       .status(400)
@@ -64,11 +67,11 @@ exports.getSessionToken = asyncHandler(async (req, res, next) => {
   const collection = mongoUtil.getDB().collection('users');
   const user = await collection.findOne({ email });
   if (!user) {
-    return res.status(400).send(new ErrorResponse('Invalid credentials', res));
+    return res.status(401).send(new ErrorResponse('Invalid credentials', res));
   }
   const isPassword = await argon2.verify(user.password, password);
   if (!isPassword) {
-    return res.status(400).json(new ErrorResponse('Invalid credentials', res));
+    return res.status(401).json(new ErrorResponse('Invalid credentials', res));
   }
   jwt.sign(
     { hello: 'world' },
@@ -78,15 +81,49 @@ exports.getSessionToken = asyncHandler(async (req, res, next) => {
       expiresIn: '1d',
     },
     function (err, token) {
-      if (err) {
+      if (err)
         return res.status(500).json(new ErrorResponse('Server Error', res));
-      } else {
+      else
         return res.status(200).json(
           new SuccessResponse(res, 'You are logged in', {
             token,
           })
         );
-      }
+    }
+  );
+});
+
+// @desc Verify session token for a user
+// @route POST /api/v1/auth/session/verify
+// @access public (requires token)
+exports.verifySessionToken = asyncHandler(async (req, res, next) => {
+  const { token, returnPayload } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorComb = Object.values(errors)[1].map((err) => err.msg);
+    return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
+  }
+  await jwt.verify(
+    token,
+    sessionTokenPublicKey,
+    {
+      algorithms: 'RS256',
+    },
+    function (err, payload) {
+      const getPayload = () => {
+        const rp = returnPayload || false;
+        if (err) return;
+        if (rp === true && payload) return { payload };
+        if (!rp || rp === false) return null;
+      };
+      if (err)
+        return res
+          .status(500)
+          .json(new ErrorResponse(`Couldn't verify token`, res));
+      else
+        return res
+          .status(200)
+          .json(new SuccessResponse(res, 'Token is valid', getPayload()));
     }
   );
 });

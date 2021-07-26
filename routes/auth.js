@@ -1,6 +1,10 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { registerUser, getSessionToken } = require('../controllers/auth');
+const {
+  registerUser,
+  getSessionToken,
+  verifySessionToken,
+} = require('../controllers/auth');
 const router = express.Router();
 
 router.route('/register').post(
@@ -52,6 +56,15 @@ router
       .isLength({ min: 1 })
       .withMessage('Please provide a password'),
     getSessionToken
+  );
+
+router
+  .route('/session/verify')
+  .post(
+    body('token', 'Please provide a valid token')
+      .isJWT()
+      .withMessage('Token should be a JWT'),
+    verifySessionToken
   );
 
 module.exports = router;
