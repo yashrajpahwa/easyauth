@@ -8,31 +8,16 @@ const jwt = require('jsonwebtoken');
 const md5 = require('md5');
 const fs = require('fs');
 const { ObjectId } = require('mongodb');
+const verifySessionToken = require('../utils/verifySessionToken');
 const sessionTokenPrivateKey = fs.readFileSync(
   'config/sessionTokenKeys/private.key'
 );
-const sessionTokenPublicKey = fs.readFileSync(
-  'config/sessionTokenKeys/public.key'
-);
-
-const verifyToken = (token) =>
-  new Promise((resolve, reject) => {
-    jwt.verify(
-      token,
-      sessionTokenPublicKey,
-      { algorithms: 'RS256' },
-      (err, payload) => {
-        if (!err && payload) resolve(payload);
-        if (err) reject(err);
-      }
-    );
-  });
 
 // @desc Register new user
 // @route POST /api/v1/auth/register
 // @access public
 exports.registerUser = asyncHandler(async (req, res, next) => {
-  const { name, nickname, email, given_name, family_name, password } = req.body;
+  const { email, password } = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const errorComb = Object.values(errors)[1].map((err) => err.msg);
@@ -51,6 +36,7 @@ exports.registerUser = asyncHandler(async (req, res, next) => {
   const newUserAuth = {
     email,
     password: hashedPassword,
+    sessionTokenRevokes: 0,
   };
   const insertedUser = await collection.insertOne(newUserAuth);
   return res
@@ -64,26 +50,39 @@ exports.registerUser = asyncHandler(async (req, res, next) => {
 // @route POST /api/v1/auth/onboard-user
 // @access a user who has logged in the first time
 exports.getUserData = asyncHandler(async (req, res, next) => {
-  const { name, nickname, email, given_name, family_name, token } = req.body;
+  const { name, nickname, given_name, family_name, token } = req.body;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const errorComb = Object.values(errors)[1].map((err) => err.msg);
     return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
   }
+  const tokenPayload = await verifySessionToken(token);
   const collection = mongoUtil.getDB().collection('userDetails');
+  const userDetails = await collection.findOne({
+    _id: ObjectId(tokenPayload._id),
+  });
+  if (userDetails) {
+    return res
+      .status(400)
+      .json(new ErrorResponse('User details are already present', res));
+  }
 
   const emailHash = md5(email); // md5 hash email
   const newUserDetails = {
-    _id: ObjectId(),
+    _id: ObjectId(tokenPayload._id),
     name,
     nickname,
     picture: `https://secure.gravatar.com/avatar/${emailHash}`,
-    email,
+    email: tokenPayload.email,
     email_verified: false,
     given_name,
     family_name,
     isDeveloper: false,
   };
+  const insertedDetails = await collection.insertOne(newUserDetails);
+  return res
+    .status(201)
+    .json(new SuccessResponse(res, 'Updated user details', insertedDetails));
 });
 
 // @desc Get session token for a user
@@ -106,7 +105,11 @@ exports.getSessionToken = asyncHandler(async (req, res, next) => {
     return res.status(401).json(new ErrorResponse('Invalid credentials', res));
   }
   jwt.sign(
-    { hello: 'world' },
+    {
+      _id: user._id,
+      sessionTokenRevokes: user.sessionTokenRevokes,
+      email: user.email,
+    },
     sessionTokenPrivateKey,
     {
       algorithm: 'RS256',
@@ -136,7 +139,7 @@ exports.verifySessionToken = asyncHandler(async (req, res, next) => {
     return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
   }
 
-  const verifiedToken = await verifyToken(token);
+  const verifiedToken = await verifySessionToken(token);
   const getPayload = () => {
     const rp = returnPayload || false;
     if (rp === true) return { token: verifiedToken };

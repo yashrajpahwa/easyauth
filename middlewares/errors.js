@@ -9,15 +9,18 @@ const errorHandler = (err, req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     console.log(err);
   }
-
+  if (error.name === 'TokenRevokedError') {
+    error.message = 'Token has been revoked by the user';
+    error.statusCode = 401;
+  }
   if (error.name === 'JsonWebTokenError') {
     error.message = 'Invalid token';
-    error.statusCode = 400;
+    error.statusCode = 401;
   }
 
   if (error.name === 'TokenExpiredError') {
     error.message = 'Token has expired';
-    error.statusCode = 400;
+    error.statusCode = 401;
   }
 
   res
