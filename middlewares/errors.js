@@ -10,6 +10,16 @@ const errorHandler = (err, req, res, next) => {
     console.log(err);
   }
 
+  if (error.name === 'JsonWebTokenError') {
+    error.message = 'Invalid token';
+    error.statusCode = 400;
+  }
+
+  if (error.name === 'TokenExpiredError') {
+    error.message = 'Token has expired';
+    error.statusCode = 400;
+  }
+
   res
     .status(error.statusCode || 500)
     .json(new ErrorResponse(error.message || 'Server Error', res));

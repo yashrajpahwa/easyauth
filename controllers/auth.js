@@ -7,12 +7,26 @@ const SuccessResponse = require('../utils/successResponse');
 const jwt = require('jsonwebtoken');
 const md5 = require('md5');
 const fs = require('fs');
+const { ObjectId } = require('mongodb');
 const sessionTokenPrivateKey = fs.readFileSync(
   'config/sessionTokenKeys/private.key'
 );
 const sessionTokenPublicKey = fs.readFileSync(
   'config/sessionTokenKeys/public.key'
 );
+
+const verifyToken = (token) =>
+  new Promise((resolve, reject) => {
+    jwt.verify(
+      token,
+      sessionTokenPublicKey,
+      { algorithms: 'RS256' },
+      (err, payload) => {
+        if (!err && payload) resolve(payload);
+        if (err) reject(err);
+      }
+    );
+  });
 
 // @desc Register new user
 // @route POST /api/v1/auth/register
@@ -34,8 +48,33 @@ exports.registerUser = asyncHandler(async (req, res, next) => {
       );
   }
   const hashedPassword = await argon2.hash(password);
+  const newUserAuth = {
+    email,
+    password: hashedPassword,
+  };
+  const insertedUser = await collection.insertOne(newUserAuth);
+  return res
+    .status(201)
+    .send(
+      new SuccessResponse(res, 'A new user has been registered', insertedUser)
+    );
+});
+
+// @desc Get user data when the user logs in to the app the first time
+// @route POST /api/v1/auth/onboard-user
+// @access a user who has logged in the first time
+exports.getUserData = asyncHandler(async (req, res, next) => {
+  const { name, nickname, email, given_name, family_name, token } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorComb = Object.values(errors)[1].map((err) => err.msg);
+    return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
+  }
+  const collection = mongoUtil.getDB().collection('userDetails');
+
   const emailHash = md5(email); // md5 hash email
-  const newUser = {
+  const newUserDetails = {
+    _id: ObjectId(),
     name,
     nickname,
     picture: `https://secure.gravatar.com/avatar/${emailHash}`,
@@ -43,15 +82,8 @@ exports.registerUser = asyncHandler(async (req, res, next) => {
     email_verified: false,
     given_name,
     family_name,
-    password: hashedPassword,
     isDeveloper: false,
   };
-  const insertedUser = await collection.insertOne(newUser);
-  return res
-    .status(201)
-    .send(
-      new SuccessResponse(res, 'A new user has been registered', insertedUser)
-    );
 });
 
 // @desc Get session token for a user
@@ -78,7 +110,7 @@ exports.getSessionToken = asyncHandler(async (req, res, next) => {
     sessionTokenPrivateKey,
     {
       algorithm: 'RS256',
-      expiresIn: '1d',
+      expiresIn: '30d',
     },
     function (err, token) {
       if (err)
@@ -103,27 +135,14 @@ exports.verifySessionToken = asyncHandler(async (req, res, next) => {
     const errorComb = Object.values(errors)[1].map((err) => err.msg);
     return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
   }
-  await jwt.verify(
-    token,
-    sessionTokenPublicKey,
-    {
-      algorithms: 'RS256',
-    },
-    function (err, payload) {
-      const getPayload = () => {
-        const rp = returnPayload || false;
-        if (err) return;
-        if (rp === true && payload) return { payload };
-        if (!rp || rp === false) return null;
-      };
-      if (err)
-        return res
-          .status(500)
-          .json(new ErrorResponse(`Couldn't verify token`, res));
-      else
-        return res
-          .status(200)
-          .json(new SuccessResponse(res, 'Token is valid', getPayload()));
-    }
-  );
+
+  const verifiedToken = await verifyToken(token);
+  const getPayload = () => {
+    const rp = returnPayload || false;
+    if (rp === true) return { token: verifiedToken };
+    if (!rp || rp === false) return null;
+  };
+  return res
+    .status(200)
+    .json(new SuccessResponse(res, 'Token is valid', getPayload()));
 });
