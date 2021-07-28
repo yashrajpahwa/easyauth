@@ -5,6 +5,7 @@ const {
   getSessionToken,
   verifySessionToken,
   getUserData,
+  revokeSessionToken,
 } = require('../controllers/auth');
 const router = express.Router();
 
@@ -101,5 +102,14 @@ router.route('/onboard-user').post(
     .withMessage('Last name can only contain alphabets'),
   getUserData
 );
+
+router
+  .route('/session/revoke')
+  .post(
+    body('token', 'Please provide a valid token')
+      .isJWT()
+      .withMessage('Token should be a JWT'),
+    revokeSessionToken
+  );
 
 module.exports = router;

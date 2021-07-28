@@ -142,10 +142,62 @@ exports.verifySessionToken = asyncHandler(async (req, res, next) => {
   const verifiedToken = await verifySessionToken(token);
   const getPayload = () => {
     const rp = returnPayload || false;
-    if (rp === true) return { token: verifiedToken };
+    if (rp === true)
+      return {
+        token: {
+          _id: verifiedToken._id,
+          email: verifiedToken.email,
+          iat: verifiedToken.iat,
+          exp: verifiedToken.exp,
+        },
+      };
     if (!rp || rp === false) return null;
   };
   return res
     .status(200)
     .json(new SuccessResponse(res, 'Token is valid', getPayload()));
+});
+
+// @desc Revoke session token for a user
+// @route POST /api/v1/auth/session/revoke
+// @access private (requires token)
+exports.revokeSessionToken = asyncHandler(async (req, res, next) => {
+  const { token } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorComb = Object.values(errors)[1].map((err) => err.msg);
+    return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
+  }
+
+  const verifiedToken = await verifySessionToken(token);
+  const collection = mongoUtil.getDB().collection('users');
+  const user = await collection.findOne({ _id: ObjectId(verifiedToken._id) });
+  const updatedUser = await collection.updateOne(
+    { _id: ObjectId(verifiedToken._id) },
+    { $set: { sessionTokenRevokes: user.sessionTokenRevokes + 1 } },
+    { merge: true }
+  );
+  jwt.sign(
+    {
+      _id: user._id,
+      sessionTokenRevokes: user.sessionTokenRevokes + 1,
+      email: user.email,
+    },
+    sessionTokenPrivateKey,
+    {
+      algorithm: 'RS256',
+      expiresIn: '30d',
+    },
+    function (err, token) {
+      if (err)
+        return res.status(500).json(new ErrorResponse('Server Error', res));
+      else
+        return res.status(201).json(
+          new SuccessResponse(res, 'Token has been revoked', {
+            newToken: token,
+            updatedUser,
+          })
+        );
+    }
+  );
 });
