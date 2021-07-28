@@ -6,6 +6,7 @@ const {
   verifySessionToken,
   getUserData,
   revokeSessionToken,
+  getUser,
 } = require('../controllers/auth');
 const router = express.Router();
 
@@ -69,7 +70,7 @@ router
     verifySessionToken
   );
 
-router.route('/onboard-user').post(
+router.route('/onboard').post(
   body('token', 'Please provide a valid token')
     .isJWT()
     .withMessage('Token should be a JWT'),
@@ -110,6 +111,15 @@ router
       .isJWT()
       .withMessage('Token should be a JWT'),
     revokeSessionToken
+  );
+
+router
+  .route('/me')
+  .post(
+    body('token', 'Please provide a valid token')
+      .isJWT()
+      .withMessage('Token should be a JWT'),
+    getUser
   );
 
 module.exports = router;

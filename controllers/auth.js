@@ -67,7 +67,7 @@ exports.getUserData = asyncHandler(async (req, res, next) => {
       .json(new ErrorResponse('User details are already present', res));
   }
 
-  const emailHash = md5(email); // md5 hash email
+  const emailHash = md5(tokenPayload.email); // md5 hash email
   const newUserDetails = {
     _id: ObjectId(tokenPayload._id),
     name,
@@ -128,6 +128,31 @@ exports.getSessionToken = asyncHandler(async (req, res, next) => {
   );
 });
 
+// @desc Get user info
+// @route POST /api/v1/auth/me
+// @access private (requires token)
+exports.getUser = asyncHandler(async (req, res, next) => {
+  const { token } = req.body;
+  const tokenPayload = await verifySessionToken(token);
+  const collection = mongoUtil.getDB().collection('userDetails');
+  const userDetails = await collection.findOne({
+    _id: ObjectId(tokenPayload._id),
+  });
+  if (!userDetails) {
+    return res
+      .status(404)
+      .json(
+        new ErrorResponse(
+          'No user data found, please complete the onboarding',
+          res
+        )
+      );
+  }
+  return res
+    .status(200)
+    .json(new SuccessResponse(res, 'User data', userDetails));
+});
+
 // @desc Verify session token for a user
 // @route POST /api/v1/auth/session/verify
 // @access public (requires token)
@@ -144,12 +169,7 @@ exports.verifySessionToken = asyncHandler(async (req, res, next) => {
     const rp = returnPayload || false;
     if (rp === true)
       return {
-        token: {
-          _id: verifiedToken._id,
-          email: verifiedToken.email,
-          iat: verifiedToken.iat,
-          exp: verifiedToken.exp,
-        },
+        token: verifiedToken,
       };
     if (!rp || rp === false) return null;
   };
