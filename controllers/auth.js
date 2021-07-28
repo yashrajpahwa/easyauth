@@ -9,6 +9,8 @@ const md5 = require('md5');
 const fs = require('fs');
 const { ObjectId } = require('mongodb');
 const verifySessionToken = require('../utils/verifySessionToken');
+const Redis = require('ioredis');
+const redis = new Redis();
 const sessionTokenPrivateKey = fs.readFileSync(
   'config/sessionTokenKeys/private.key'
 );
@@ -127,8 +129,7 @@ exports.getSessionToken = asyncHandler(async (req, res, next) => {
     }
   );
 });
-const Redis = require('ioredis');
-const redis = new Redis();
+
 // @desc Get user info
 // @route POST /api/v1/auth/me
 // @access private (requires token)
