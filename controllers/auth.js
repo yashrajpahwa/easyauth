@@ -127,30 +127,50 @@ exports.getSessionToken = asyncHandler(async (req, res, next) => {
     }
   );
 });
-
+const Redis = require('ioredis');
+const redis = new Redis();
 // @desc Get user info
 // @route POST /api/v1/auth/me
 // @access private (requires token)
 exports.getUser = asyncHandler(async (req, res, next) => {
   const { token } = req.body;
   const tokenPayload = await verifySessionToken(token);
+  const userInfoKey = `userInfo_${tokenPayload._id}`;
   const collection = mongoUtil.getDB().collection('userDetails');
-  const userDetails = await collection.findOne({
-    _id: ObjectId(tokenPayload._id),
-  });
-  if (!userDetails) {
-    return res
-      .status(404)
-      .json(
-        new ErrorResponse(
-          'No user data found, please complete the onboarding',
-          res
-        )
+
+  redis.get(userInfoKey, async (err, data) => {
+    if (err !== null) console.error(err);
+    if (data && err === null) {
+      return res
+        .status(200)
+        .json(new SuccessResponse(res, 'User data', JSON.parse(data)));
+    } else if (!data && err === null) {
+      const userDetails = await collection.findOne({
+        _id: ObjectId(tokenPayload._id),
+      });
+      if (!userDetails) {
+        return res
+          .status(404)
+          .json(
+            new ErrorResponse(
+              'No user data found, please complete the onboarding',
+              res
+            )
+          );
+      }
+      redis.setex(
+        userInfoKey,
+        7200,
+        JSON.stringify(userDetails),
+        (err, response) => {
+          if (err) console.error(err);
+        }
       );
-  }
-  return res
-    .status(200)
-    .json(new SuccessResponse(res, 'User data', userDetails));
+      return res
+        .status(200)
+        .json(new SuccessResponse(res, 'User data', userDetails));
+    }
+  });
 });
 
 // @desc Verify session token for a user

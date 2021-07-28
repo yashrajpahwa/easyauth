@@ -52,6 +52,7 @@ const verifySessionToken = (token, sessionTokenRevokes) =>
                   userAuthDetailsKey,
                   7200,
                   JSON.stringify({
+                    _id: user._id,
                     sessionTokenRevokes: user.sessionTokenRevokes,
                     email: user.email,
                   }),
