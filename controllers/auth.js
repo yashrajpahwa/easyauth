@@ -12,7 +12,6 @@ const verifySessionToken = require('../utils/verifySessionToken');
 const sessionTokenPrivateKey = fs.readFileSync(
   'config/sessionTokenKeys/private.key'
 );
-
 // @desc Register new user
 // @route POST /api/v1/auth/register
 // @access public
@@ -47,10 +46,11 @@ exports.registerUser = asyncHandler(async (req, res, next) => {
 });
 
 // @desc Get user data when the user logs in to the app the first time
-// @route POST /api/v1/auth/onboard-user
+// @route POST /api/v1/auth/onboard
 // @access a user who has logged in the first time
 exports.getUserData = asyncHandler(async (req, res, next) => {
   const { name, nickname, given_name, family_name, token } = req.body;
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const errorComb = Object.values(errors)[1].map((err) => err.msg);
