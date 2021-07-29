@@ -211,6 +211,7 @@ exports.revokeSessionToken = asyncHandler(async (req, res, next) => {
   }
 
   const verifiedToken = await verifySessionToken(token);
+  const redisKey = `userAuthDetails_${verifiedToken._id}`;
   const collection = mongoUtil.getDB().collection('users');
   const user = await collection.findOne({ _id: ObjectId(verifiedToken._id) });
   const updatedUser = await collection.updateOne(
@@ -218,6 +219,10 @@ exports.revokeSessionToken = asyncHandler(async (req, res, next) => {
     { $set: { sessionTokenRevokes: user.sessionTokenRevokes + 1 } },
     { merge: true }
   );
+  redis.expire(redisKey, 0, (err, data) => {
+    if (err) console.error(err);
+  });
+
   jwt.sign(
     {
       _id: user._id,
