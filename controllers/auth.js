@@ -2,15 +2,15 @@ const { validationResult } = require('express-validator');
 const asyncHandler = require('../middlewares/async');
 const ErrorResponse = require('../utils/errorResponse');
 const mongoUtil = require('../utils/mongoUtil');
-const argon2 = require('argon2');
 const SuccessResponse = require('../utils/successResponse');
-const jwt = require('jsonwebtoken');
 const md5 = require('md5');
 const fs = require('fs');
 const { ObjectId } = require('mongodb');
 const verifySessionToken = require('../utils/verifySessionToken');
 const Redis = require('ioredis');
-const redis = new Redis();
+const signToken = require('../utils/signToken');
+const { hash, verify } = require('argon2');
+const redis = new Redis(process.env.REDIS_PORT);
 const sessionTokenPrivateKey = fs.readFileSync(
   'config/sessionTokenKeys/private.key'
 );
@@ -33,7 +33,7 @@ exports.registerUser = asyncHandler(async (req, res, next) => {
         new ErrorResponse('A user with the same email already exists', res)
       );
   }
-  const hashedPassword = await argon2.hash(password);
+  const hashedPassword = await hash(password);
   const newUserAuth = {
     email,
     password: hashedPassword,
@@ -45,6 +45,41 @@ exports.registerUser = asyncHandler(async (req, res, next) => {
     .send(
       new SuccessResponse(res, 'A new user has been registered', insertedUser)
     );
+});
+
+// @desc Get session token for a user
+// @route POST /api/v1/auth/login
+// @access public
+exports.getSessionToken = asyncHandler(async (req, res, next) => {
+  const { email, password } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const errorComb = Object.values(errors)[1].map((err) => err.msg);
+    return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
+  }
+  const collection = mongoUtil.getDB().collection('users');
+  const user = await collection.findOne({ email });
+  if (!user) {
+    return res.status(401).send(new ErrorResponse('Invalid credentials', res));
+  }
+  const isPassword = await verify(user.password, password);
+  if (!isPassword) {
+    return res.status(401).json(new ErrorResponse('Invalid credentials', res));
+  }
+  const sessionTokenPayload = {
+    _id: user._id,
+    sessionTokenRevokes: user.sessionTokenRevokes,
+    email: user.email,
+  };
+  const sessionToken = await signToken(
+    sessionTokenPayload,
+    sessionTokenPrivateKey
+  );
+  return res.status(200).json(
+    new SuccessResponse(res, 'You are logged in', {
+      token: sessionToken,
+    })
+  );
 });
 
 // @desc Get user data when the user logs in to the app the first time
@@ -85,49 +120,6 @@ exports.getUserData = asyncHandler(async (req, res, next) => {
   return res
     .status(201)
     .json(new SuccessResponse(res, 'Updated user details', insertedDetails));
-});
-
-// @desc Get session token for a user
-// @route POST /api/v1/auth/login
-// @access public
-exports.getSessionToken = asyncHandler(async (req, res, next) => {
-  const { email, password } = req.body;
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const errorComb = Object.values(errors)[1].map((err) => err.msg);
-    return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
-  }
-  const collection = mongoUtil.getDB().collection('users');
-  const user = await collection.findOne({ email });
-  if (!user) {
-    return res.status(401).send(new ErrorResponse('Invalid credentials', res));
-  }
-  const isPassword = await argon2.verify(user.password, password);
-  if (!isPassword) {
-    return res.status(401).json(new ErrorResponse('Invalid credentials', res));
-  }
-  jwt.sign(
-    {
-      _id: user._id,
-      sessionTokenRevokes: user.sessionTokenRevokes,
-      email: user.email,
-    },
-    sessionTokenPrivateKey,
-    {
-      algorithm: 'RS256',
-      expiresIn: '30d',
-    },
-    function (err, token) {
-      if (err)
-        return res.status(500).json(new ErrorResponse('Server Error', res));
-      else
-        return res.status(200).json(
-          new SuccessResponse(res, 'You are logged in', {
-            token,
-          })
-        );
-    }
-  );
 });
 
 // @desc Get user info
@@ -222,28 +214,18 @@ exports.revokeSessionToken = asyncHandler(async (req, res, next) => {
   redis.expire(redisKey, 0, (err, data) => {
     if (err) console.error(err);
   });
-
-  jwt.sign(
+  const refreshedToken = await signToken(
     {
       _id: user._id,
       sessionTokenRevokes: user.sessionTokenRevokes + 1,
       email: user.email,
     },
-    sessionTokenPrivateKey,
-    {
-      algorithm: 'RS256',
-      expiresIn: '30d',
-    },
-    function (err, token) {
-      if (err)
-        return res.status(500).json(new ErrorResponse('Server Error', res));
-      else
-        return res.status(201).json(
-          new SuccessResponse(res, 'Token has been revoked', {
-            newToken: token,
-            updatedUser,
-          })
-        );
-    }
+    sessionTokenPrivateKey
+  );
+  return res.status(201).json(
+    new SuccessResponse(res, 'Token has been revoked', {
+      newToken: refreshedToken,
+      updatedUser,
+    })
   );
 });

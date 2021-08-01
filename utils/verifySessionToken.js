@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const mongoUtil = require('./mongoUtil');
+const { verify } = require('jsonwebtoken');
 const { ObjectId } = require('mongodb');
 const sessionTokenPublicKey = fs.readFileSync(
   'config/sessionTokenKeys/public.key'
@@ -12,11 +12,11 @@ const tokenRevokedError = {
 };
 
 const Redis = require('ioredis');
-const redis = new Redis();
+const redis = new Redis(process.env.REDIS_PORT);
 
 const verifySessionToken = (token, sessionTokenRevokes) =>
   new Promise((resolve, reject) => {
-    jwt.verify(
+    verify(
       token,
       sessionTokenPublicKey,
       { algorithms: 'RS256' },
