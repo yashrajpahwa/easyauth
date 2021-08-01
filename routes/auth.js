@@ -1,13 +1,11 @@
 const express = require('express');
 const { body } = require('express-validator');
-const {
-  registerUser,
-  getSessionToken,
-  verifySessionToken,
-  getUserData,
-  revokeSessionToken,
-  getUser,
-} = require('../controllers/auth');
+const collectUserData = require('../controllers/auth/collectUserData');
+const getMe = require('../controllers/auth/getMe');
+const loginUser = require('../controllers/auth/loginUser');
+const registerUser = require('../controllers/auth/registerUser');
+const revokeSessionToken = require('../controllers/auth/revokeSessionToken');
+const verifySessionToken = require('../controllers/auth/verifySessionToken');
 const router = express.Router();
 
 router.route('/register').post(
@@ -58,7 +56,7 @@ router
     body('password', 'Please provide a valid password')
       .isLength({ min: 1 })
       .withMessage('Please provide a password'),
-    getSessionToken
+    loginUser
   );
 
 router
@@ -101,7 +99,7 @@ router.route('/onboard').post(
     })
     .isAlpha()
     .withMessage('Last name can only contain alphabets'),
-  getUserData
+  collectUserData
 );
 
 router
@@ -119,7 +117,7 @@ router
     body('token', 'Please provide a valid token')
       .isJWT()
       .withMessage('Token should be a JWT'),
-    getUser
+    getMe
   );
 
 module.exports = router;
