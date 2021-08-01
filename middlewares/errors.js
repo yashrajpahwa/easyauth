@@ -23,9 +23,14 @@ const errorHandler = (err, req, res, next) => {
     error.statusCode = 401;
   }
 
+  if (error.name === 'OnboardingIncomplete') {
+    error.message = 'Please complete the onboarding to proceed';
+    error.statusCode = 403;
+  }
+
   res
     .status(error.statusCode || 500)
-    .json(new ErrorResponse(error.message || 'Server Error', res));
+    .json(new ErrorResponse(error.message || res.sentry, res));
 };
 
 module.exports = errorHandler;

@@ -1,10 +1,12 @@
 const express = require('express');
 const { body } = require('express-validator');
 const collectUserData = require('../controllers/auth/collectUserData');
+const getAccessToken = require('../controllers/auth/getAccessToken');
 const getMe = require('../controllers/auth/getMe');
 const loginUser = require('../controllers/auth/loginUser');
 const registerUser = require('../controllers/auth/registerUser');
 const revokeSessionToken = require('../controllers/auth/revokeSessionToken');
+const verifyAccessToken = require('../controllers/auth/verifyAccessToken');
 const verifySessionToken = require('../controllers/auth/verifySessionToken');
 const router = express.Router();
 
@@ -60,12 +62,28 @@ router
   );
 
 router
+  .route('/session/access-token')
+  .post(
+    body('sessionToken', 'Please provide a valid token')
+      .isJWT()
+      .withMessage('Token should be a JWT'),
+    getAccessToken
+  );
+
+router
   .route('/session/verify')
   .post(
     body('token', 'Please provide a valid token')
       .isJWT()
       .withMessage('Token should be a JWT'),
     verifySessionToken
+  );
+
+router
+  .route('/access-token/verify')
+  .post(
+    body('accessToken', 'Please provide a valid access token').isJWT(),
+    verifyAccessToken
   );
 
 router.route('/onboard').post(
