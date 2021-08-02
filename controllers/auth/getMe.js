@@ -2,8 +2,12 @@ const { validationResult } = require('express-validator');
 const asyncHandler = require('../../middlewares/async');
 const ErrorResponse = require('../../utils/errorResponse');
 const SuccessResponse = require('../../utils/successResponse');
-const verifySessionToken = require('../../utils/verifySessionToken');
+const verifyToken = require('../../utils/verifyToken');
 const getUserDetails = require('../../utils/getUserDetails');
+const fs = require('fs');
+const sessionAccessTokenPublicKey = fs.readFileSync(
+  'config/sessionAccessTokenKeys/public.key'
+);
 
 // @desc Get user info
 // @route POST /api/v1/auth/me
@@ -15,7 +19,7 @@ const getMe = asyncHandler(async (req, res, next) => {
     const errorComb = Object.values(errors)[1].map((err) => err.msg);
     return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
   }
-  const tokenPayload = await verifySessionToken(token);
+  const tokenPayload = await verifyToken(token, sessionAccessTokenPublicKey);
   const userDetails = await getUserDetails(tokenPayload._id);
   return res.status(200).json(new SuccessResponse(res, null, userDetails));
 });

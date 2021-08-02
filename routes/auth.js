@@ -61,31 +61,6 @@ router
     loginUser
   );
 
-router
-  .route('/session/access-token')
-  .post(
-    body('sessionToken', 'Please provide a valid token')
-      .isJWT()
-      .withMessage('Token should be a JWT'),
-    getAccessToken
-  );
-
-router
-  .route('/session/verify')
-  .post(
-    body('token', 'Please provide a valid token')
-      .isJWT()
-      .withMessage('Token should be a JWT'),
-    verifySessionToken
-  );
-
-router
-  .route('/access-token/verify')
-  .post(
-    body('accessToken', 'Please provide a valid access token').isJWT(),
-    verifyAccessToken
-  );
-
 router.route('/onboard').post(
   body('token', 'Please provide a valid token')
     .isJWT()
@@ -121,12 +96,28 @@ router.route('/onboard').post(
 );
 
 router
-  .route('/session/revoke')
+  .route('/revoke/session-token')
   .post(
     body('token', 'Please provide a valid token')
       .isJWT()
       .withMessage('Token should be a JWT'),
     revokeSessionToken
+  );
+
+router
+  .route('/verify/session-token')
+  .post(
+    body('token', 'Please provide a valid token')
+      .isJWT()
+      .withMessage('Token should be a JWT'),
+    verifySessionToken
+  );
+
+router
+  .route('/verify/access-token')
+  .post(
+    body('accessToken', 'Please provide a valid access token').isJWT(),
+    verifyAccessToken
   );
 
 router
@@ -136,6 +127,15 @@ router
       .isJWT()
       .withMessage('Token should be a JWT'),
     getMe
+  );
+
+router
+  .route('/access-token')
+  .post(
+    body('sessionToken', 'Please provide a valid token')
+      .isJWT()
+      .withMessage('Token should be a JWT'),
+    getAccessToken
   );
 
 module.exports = router;
