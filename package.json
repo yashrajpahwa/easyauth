@@ -24,7 +24,8 @@
     "ioredis": "^4.27.6",
     "jsonwebtoken": "^8.5.1",
     "md5": "^2.3.0",
-    "mongodb": "^4.0.0"
+    "mongodb": "^4.0.0",
+    "nanoid": "^3.1.23"
   },
   "devDependencies": {
     "nodemon": "^2.0.12"

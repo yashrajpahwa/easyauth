@@ -8,7 +8,7 @@ const registerUser = require('../controllers/auth/registerUser');
 const revokeSessionToken = require('../controllers/auth/revokeSessionToken');
 const verifyAccessToken = require('../controllers/auth/verifyAccessToken');
 const verifySessionToken = require('../controllers/auth/verifySessionToken');
-const { protectUserAuth } = require('../middlewares/auth');
+const { protectUserAuth, validateUserSession } = require('../middlewares/auth');
 const router = express.Router();
 
 router.route('/register').post(
@@ -102,6 +102,6 @@ router.route('/verify/access-token').post(protectUserAuth, verifyAccessToken);
 
 router.route('/me').post(protectUserAuth, getMe);
 
-router.route('/access-token').post(protectUserAuth, getAccessToken);
+router.route('/access-token').post(validateUserSession, getAccessToken);
 
 module.exports = router;

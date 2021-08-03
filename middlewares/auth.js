@@ -34,3 +34,15 @@ exports.protectUserAuth = asyncHandler(async (req, res, next) => {
 
   next();
 });
+
+exports.validateUserSession = asyncHandler(async (req, res, next) => {
+  let sessionToken;
+  if (req.headers.session) {
+    sessionToken = req.headers.session;
+  }
+  if (!sessionToken) {
+    return next({ name: 'NoSessionToken' });
+  }
+  req.sessionToken = sessionToken;
+  next();
+});
