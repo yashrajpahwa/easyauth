@@ -10,12 +10,7 @@ const sessionAccessTokenPrivateKey = fs.readFileSync(
 );
 
 const getAccessToken = asyncHandler(async (req, res, next) => {
-  const { sessionToken } = req.body;
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const errorComb = Object.values(errors)[1].map((err) => err.msg);
-    return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
-  }
+  const { sessionToken } = req;
   const sessionTokenPayload = await verifySessionToken(sessionToken);
   let userDetails = await getUserDetails(sessionTokenPayload._id);
   const accessToken = await signToken(

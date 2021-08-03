@@ -17,14 +17,14 @@ const sessionTokenPrivateKey = fs.readFileSync(
 // @route POST /api/v1/auth/session/revoke
 // @access private (requires token)
 const revokeSessionToken = asyncHandler(async (req, res, next) => {
-  const { token } = req.body;
+  const { sessionToken } = req;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const errorComb = Object.values(errors)[1].map((err) => err.msg);
     return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
   }
 
-  const verifiedToken = await verifySessionToken(token);
+  const verifiedToken = await verifySessionToken(sessionToken);
   const redisKey = `userAuthDetails_${verifiedToken._id}`;
   const collection = mongoUtil.getDB().collection('users');
   const user = await collection.findOne({ _id: ObjectId(verifiedToken._id) });

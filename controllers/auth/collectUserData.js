@@ -11,14 +11,15 @@ const verifySessionToken = require('../../utils/verifySessionToken');
 // @route POST /api/v1/auth/onboard
 // @access a user who has logged in the first time
 const collectUserData = asyncHandler(async (req, res, next) => {
-  const { name, nickname, given_name, family_name, token } = req.body;
+  const { name, nickname, given_name, family_name } = req.body;
+  const { sessionToken } = req;
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const errorComb = Object.values(errors)[1].map((err) => err.msg);
     return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
   }
-  const tokenPayload = await verifySessionToken(token);
+  const tokenPayload = await verifySessionToken(sessionToken);
   const collection = mongoUtil.getDB().collection('userDetails');
   const userDetails = await collection.findOne({
     _id: ObjectId(tokenPayload._id),

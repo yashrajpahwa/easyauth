@@ -13,6 +13,16 @@ const errorHandler = (err, req, res, next) => {
     error.message = 'Token has been revoked by the user';
     error.statusCode = 401;
   }
+  if (error.name === 'NoAccessToken') {
+    error.message = 'Please provide an access token';
+    error.statusCode = 400;
+  }
+
+  if (error.name === 'NoSessionToken') {
+    error.message = 'Please provide a session token';
+    error.statusCode = 400;
+  }
+
   if (error.name === 'JsonWebTokenError') {
     error.message = 'Invalid token';
     error.statusCode = 401;

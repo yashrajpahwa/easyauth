@@ -13,13 +13,7 @@ const sessionAccessTokenPublicKey = fs.readFileSync(
 // @route POST /api/v1/auth/me
 // @access private (requires token)
 const getMe = asyncHandler(async (req, res, next) => {
-  const { token } = req.body;
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const errorComb = Object.values(errors)[1].map((err) => err.msg);
-    return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
-  }
-  const tokenPayload = await verifyToken(token, sessionAccessTokenPublicKey);
+  const tokenPayload = req.accessTokenPayload;
   const userDetails = await getUserDetails(tokenPayload._id);
   return res.status(200).json(new SuccessResponse(res, null, userDetails));
 });

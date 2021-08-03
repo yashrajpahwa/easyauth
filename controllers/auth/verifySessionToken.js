@@ -8,14 +8,15 @@ const verifySessionTokenUtil = require('../../utils/verifySessionToken');
 // @route POST /api/v1/auth/session/verify
 // @access public (requires token)
 const verifySessionToken = asyncHandler(async (req, res, next) => {
-  const { token, returnPayload } = req.body;
+  const { returnPayload } = req.body;
+  const { sessionToken } = req;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const errorComb = Object.values(errors)[1].map((err) => err.msg);
     return res.status(400).json(new ErrorResponse(errorComb.join(', '), res));
   }
 
-  const verifiedToken = await verifySessionTokenUtil(token);
+  const verifiedToken = await verifySessionTokenUtil(sessionToken);
   const getPayload = () => {
     const rp = returnPayload || false;
     if (rp === true)

@@ -8,6 +8,7 @@ const registerUser = require('../controllers/auth/registerUser');
 const revokeSessionToken = require('../controllers/auth/revokeSessionToken');
 const verifyAccessToken = require('../controllers/auth/verifyAccessToken');
 const verifySessionToken = require('../controllers/auth/verifySessionToken');
+const { protectUserAuth } = require('../middlewares/auth');
 const router = express.Router();
 
 router.route('/register').post(
@@ -62,9 +63,7 @@ router
   );
 
 router.route('/onboard').post(
-  body('token', 'Please provide a valid token')
-    .isJWT()
-    .withMessage('Token should be a JWT'),
+  protectUserAuth,
   body('name', 'Please provide a valid name')
     .isAlpha()
     .withMessage('Name can only contain alphabets')
@@ -95,47 +94,14 @@ router.route('/onboard').post(
   collectUserData
 );
 
-router
-  .route('/revoke/session-token')
-  .post(
-    body('token', 'Please provide a valid token')
-      .isJWT()
-      .withMessage('Token should be a JWT'),
-    revokeSessionToken
-  );
+router.route('/revoke/session-token').post(protectUserAuth, revokeSessionToken);
 
-router
-  .route('/verify/session-token')
-  .post(
-    body('token', 'Please provide a valid token')
-      .isJWT()
-      .withMessage('Token should be a JWT'),
-    verifySessionToken
-  );
+router.route('/verify/session-token').post(protectUserAuth, verifySessionToken);
 
-router
-  .route('/verify/access-token')
-  .post(
-    body('accessToken', 'Please provide a valid access token').isJWT(),
-    verifyAccessToken
-  );
+router.route('/verify/access-token').post(protectUserAuth, verifyAccessToken);
 
-router
-  .route('/me')
-  .post(
-    body('token', 'Please provide a valid token')
-      .isJWT()
-      .withMessage('Token should be a JWT'),
-    getMe
-  );
+router.route('/me').post(protectUserAuth, getMe);
 
-router
-  .route('/access-token')
-  .post(
-    body('sessionToken', 'Please provide a valid token')
-      .isJWT()
-      .withMessage('Token should be a JWT'),
-    getAccessToken
-  );
+router.route('/access-token').post(protectUserAuth, getAccessToken);
 
 module.exports = router;

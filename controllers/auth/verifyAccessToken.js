@@ -12,7 +12,8 @@ const sessionAccessTokenPublicKey = fs.readFileSync(
 // @route POST /api/v1/auth/access-token/verify
 // @access public (requires token)
 const verifyAccessToken = asyncHandler(async (req, res, next) => {
-  const { accessToken, returnPayload } = req.body;
+  const { returnPayload } = req.body;
+  const { accessToken } = req;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const errorComb = Object.values(errors)[1].map((err) => err.msg);
