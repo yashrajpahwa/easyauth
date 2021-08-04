@@ -1,4 +1,5 @@
 const { validationResult } = require('express-validator');
+const { ObjectId } = require('mongodb');
 const { nanoid } = require('nanoid');
 const asyncHandler = require('../../../middlewares/async');
 const ErrorResponse = require('../../../utils/errorResponse');
@@ -25,7 +26,7 @@ const registerClient = asyncHandler(async (req, res, next) => {
     client_uri,
     logo_uri: null,
     token_endpoint_auth_method: 'client_secret_basic',
-    user: accessTokenPayload._id,
+    owner: ObjectId(accessTokenPayload._id),
   };
   const collection = mongoUtil.getDB().collection('clients');
   const response = await collection.insertOne(clientDetails);
@@ -38,7 +39,7 @@ const registerClient = asyncHandler(async (req, res, next) => {
       token_endpoint_auth_method: 'client_secret_basic',
       client_secret: clientDetails.client_secret,
       client_id: response.insertedId,
-      user: accessTokenPayload._id,
+      owner: accessTokenPayload._id,
     })
   );
 });
