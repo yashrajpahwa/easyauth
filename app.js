@@ -2,6 +2,9 @@ const express = require('express');
 const Sentry = require('@sentry/node');
 const Tracing = require('@sentry/tracing');
 const dotenv = require('dotenv');
+const ErrorResponse = require('./utils/errorResponse');
+const mongoUtil = require('./utils/mongoUtil');
+const checkEnv = require('./utils/checkEnv');
 
 // Import middlewares
 const helmet = require('helmet');
@@ -17,13 +20,14 @@ const app = express();
 
 // Configure dotenv
 const envOptions = require('./config/envOptions');
-const ErrorResponse = require('./utils/errorResponse');
-const mongoUtil = require('./utils/mongoUtil');
 dotenv.config(envOptions);
+
+// Check environment variables
+checkEnv(process.env);
 
 // Initialize Sentry
 Sentry.init({
-  dsn: 'https://9261a5ca9549403db9eac9a0d09c3719@o530119.ingest.sentry.io/5888096',
+  dsn: process.env.SENTRY_DSN,
   integrations: [
     // enable HTTP calls tracing
     new Sentry.Integrations.Http({ tracing: true }),
