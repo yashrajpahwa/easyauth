@@ -1,7 +1,8 @@
 const Redis = require('ioredis');
 const { ObjectId } = require('mongodb');
 const mongoUtil = require('./mongoUtil');
-const redis = new Redis(process.env.REDIS_PORT);
+const redisPort = parseInt(process.env.REDIS_PORT);
+const redis = new Redis(redisPort);
 
 const getUserDetails = (userId) => {
   const onboardingIncompleteError = { name: 'OnboardingIncomplete' };

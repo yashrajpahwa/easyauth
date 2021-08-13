@@ -63,7 +63,7 @@ router
   );
 
 router.route('/onboard').post(
-  protectUserAuth,
+  validateUserSession,
   body('name', 'Please provide a valid name')
     .isAlpha()
     .withMessage('Name can only contain alphabets')
@@ -94,14 +94,16 @@ router.route('/onboard').post(
   collectUserData
 );
 
-router.route('/revoke/session-token').post(protectUserAuth, revokeSessionToken);
+router.route('/revoke/sessionToken').post(protectUserAuth, revokeSessionToken);
 
-router.route('/verify/session-token').post(protectUserAuth, verifySessionToken);
+router
+  .route('/verify/sessionToken')
+  .post(validateUserSession, verifySessionToken);
 
-router.route('/verify/access-token').post(protectUserAuth, verifyAccessToken);
+router.route('/verify/accessToken').post(protectUserAuth, verifyAccessToken);
 
 router.route('/me').post(protectUserAuth, getMe);
 
-router.route('/access-token').post(validateUserSession, getAccessToken);
+router.route('/accessToken').post(validateUserSession, getAccessToken);
 
 module.exports = router;

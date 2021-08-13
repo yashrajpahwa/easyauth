@@ -12,7 +12,8 @@ const tokenRevokedError = {
 };
 
 const Redis = require('ioredis');
-const redis = new Redis(process.env.REDIS_PORT);
+const redisPort = parseInt(process.env.REDIS_PORT);
+const redis = new Redis(redisPort);
 
 const verifySessionToken = (token, sessionTokenRevokes) =>
   new Promise((resolve, reject) => {

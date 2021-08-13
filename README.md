@@ -1,2 +1,3 @@
 # Easyauth
-An easy to use, OIDC based authentication and authorisation service
+
+An open source, fast yet simple microservice to add authentication and authorisation to your project.

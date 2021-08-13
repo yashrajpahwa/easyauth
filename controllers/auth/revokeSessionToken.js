@@ -8,7 +8,8 @@ const { ObjectId } = require('mongodb');
 const verifySessionToken = require('../../utils/verifySessionToken');
 const Redis = require('ioredis');
 const signToken = require('../../utils/signToken');
-const redis = new Redis(process.env.REDIS_PORT);
+const redisPort = parseInt(process.env.REDIS_PORT);
+const redis = new Redis(redisPort);
 const sessionTokenPrivateKey = fs.readFileSync(
   'config/sessionTokenKeys/private.key'
 );
