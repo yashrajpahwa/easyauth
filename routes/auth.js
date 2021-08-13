@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { body } = require('express-validator');
 const collectUserData = require('../controllers/auth/collectUserData');
 const getAccessToken = require('../controllers/auth/getAccessToken');
@@ -11,7 +12,38 @@ const verifySessionToken = require('../controllers/auth/verifySessionToken');
 const { protectUserAuth, validateUserSession } = require('../middlewares/auth');
 const router = express.Router();
 
+// Rate limit an IP
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 60 minutes
+  max: 20,
+});
+
+// Rate limit an IP
+const loginLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 60 minutes
+  max: 40,
+});
+
+// Rate limit an IP
+const revokeSessionTokenLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000, // 30 minutes
+  max: 20,
+});
+
+// Rate limit an IP
+const getAccessTokenLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000, // 30 minutes
+  max: 50,
+});
+
+// Rate limit an IP
+const verifyTokenLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000, // 30 minutes
+  max: 150,
+});
+
 router.route('/register').post(
+  registerLimiter,
   body('name', 'Please provide a valid name')
     .isAlpha()
     .withMessage('Name can only contain alphabets')
@@ -52,6 +84,7 @@ router.route('/register').post(
 router
   .route('/login')
   .post(
+    loginLimiter,
     body('email', 'Please provide a valid email')
       .isEmail()
       .withMessage('Please provide a valid email address')
@@ -63,6 +96,7 @@ router
   );
 
 router.route('/onboard').post(
+  registerLimiter,
   validateUserSession,
   body('name', 'Please provide a valid name')
     .isAlpha()
@@ -94,16 +128,22 @@ router.route('/onboard').post(
   collectUserData
 );
 
-router.route('/revoke/sessionToken').post(protectUserAuth, revokeSessionToken);
+router
+  .route('/revoke/sessionToken')
+  .post(revokeSessionTokenLimiter, protectUserAuth, revokeSessionToken);
 
 router
   .route('/verify/sessionToken')
-  .post(validateUserSession, verifySessionToken);
+  .post(verifyTokenLimiter, validateUserSession, verifySessionToken);
 
-router.route('/verify/accessToken').post(protectUserAuth, verifyAccessToken);
+router
+  .route('/verify/accessToken')
+  .post(verifyTokenLimiter, protectUserAuth, verifyAccessToken);
 
-router.route('/me').post(protectUserAuth, getMe);
+router.route('/me').post(verifyTokenLimiter, protectUserAuth, getMe);
 
-router.route('/accessToken').post(validateUserSession, getAccessToken);
+router
+  .route('/accessToken')
+  .post(getAccessTokenLimiter, validateUserSession, getAccessToken);
 
 module.exports = router;
