@@ -7,6 +7,7 @@ const getMe = require('../controllers/auth/getMe');
 const loginUser = require('../controllers/auth/loginUser');
 const registerUser = require('../controllers/auth/registerUser');
 const revokeSessionToken = require('../controllers/auth/revokeSessionToken');
+const updateMe = require('../controllers/auth/updateMe');
 const verifyAccessToken = require('../controllers/auth/verifyAccessToken');
 const verifySessionToken = require('../controllers/auth/verifySessionToken');
 const { protectUserAuth, validateUserSession } = require('../middlewares/auth');
@@ -14,6 +15,12 @@ const router = express.Router();
 
 // Rate limit an IP
 const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 60 minutes
+  max: 20,
+});
+
+// Rate limit an IP
+const updateUserLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 60 minutes
   max: 20,
 });
@@ -140,7 +147,41 @@ router
   .route('/verify/accessToken')
   .post(verifyTokenLimiter, protectUserAuth, verifyAccessToken);
 
-router.route('/me').post(verifyTokenLimiter, protectUserAuth, getMe);
+router
+  .route('/me')
+  .get(verifyTokenLimiter, protectUserAuth, getMe)
+  .put(
+    updateUserLimiter,
+    protectUserAuth,
+    body('name', 'Please provide a valid name')
+      .isAlpha()
+      .withMessage('Name can only contain alphabets')
+      .isLength({ min: 2 })
+      .withMessage('Name needs to contain atleast 2 characters'),
+    body('nickname', 'Please provide a valid nickname')
+      .isLength({
+        min: 5,
+        max: 25,
+      })
+      .withMessage('The nickname needs to be atleast 5 characters')
+      .isAlphanumeric()
+      .withMessage('Nickname can only contain alphabets & digits'),
+
+    body('given_name', 'Please provide valid value for the first name')
+      .isLength({
+        min: 2,
+      })
+      .withMessage('First name should be atleast 2 characters')
+      .isAlpha()
+      .withMessage('First name can only contain alphabets'),
+    body('family_name', 'Please provide a valid value for the last name')
+      .isLength({
+        min: 1,
+      })
+      .isAlpha()
+      .withMessage('Last name can only contain alphabets'),
+    updateMe
+  );
 
 router
   .route('/accessToken')
