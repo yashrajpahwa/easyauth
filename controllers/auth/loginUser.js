@@ -36,13 +36,17 @@ const loginUser = asyncHandler(async (req, res, next) => {
   };
   const sessionToken = await signToken(
     sessionTokenPayload,
-    sessionTokenPrivateKey
+    sessionTokenPrivateKey,
+    `${process.env.SESSION_TOKEN_EXPIRY}d`
   );
   return res
     .status(200)
     .cookie('sessionToken', sessionToken, {
       httpOnly: true,
-      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      expires: new Date(
+        Date.now() +
+          parseInt(process.env.SESSION_TOKEN_EXPIRY) * 24 * 60 * 60 * 1000
+      ),
     })
     .json(
       new SuccessResponse(res, 'You are logged in', {

@@ -31,7 +31,7 @@ Sentry.init({
   dsn: process.env.SENTRY_DSN,
   integrations: [
     // enable HTTP calls tracing
-    new Sentry.Integrations.Http({ tracing: true }),
+    new Sentry.Integrations.Http({ tracing: process.env.SENTRY_SHOULD_TRACE }),
     // enable Express.js middleware tracing
     new Tracing.Integrations.Express({ app }),
   ],
@@ -39,12 +39,12 @@ Sentry.init({
   // Set tracesSampleRate to 1.0 to capture 100%
   // of transactions for performance monitoring.
   // We recommend adjusting this value in production
-  tracesSampleRate: 1.0,
+  tracesSampleRate: process.env.SENTRY_TRACES_SAMPLE_RATE,
 });
 
 // RequestHandler creates a separate execution context using domains, so that every
 // transaction/span/breadcrumb is attached to its own Hub instance
-app.use(Sentry.Handlers.requestHandler({ ip: true }));
+app.use(Sentry.Handlers.requestHandler({ ip: process.env.SENTRY_COLLECT_IP }));
 // TracingHandler creates a trace for every incoming request
 app.use(Sentry.Handlers.tracingHandler());
 
@@ -52,7 +52,18 @@ app.use(Sentry.Handlers.tracingHandler());
 app.use(cookieParser());
 
 // Use CORS
-app.use(cors());
+const corsOrigin = process.env.CORS_ORIGIN.split(',');
+
+const corsOptions = {
+  origin: corsOrigin,
+  optionsSuccessStatus: 200,
+};
+
+if (process.env.ALLOW_CREDENTIALS_HEADER === 'true') {
+  corsOptions.credentials = true;
+}
+
+app.use(cors(corsOptions));
 
 // Use helmet
 app.use(helmet());

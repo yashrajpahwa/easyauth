@@ -15,13 +15,15 @@ const getAccessToken = asyncHandler(async (req, res, next) => {
   const accessToken = await signToken(
     userDetails,
     sessionAccessTokenPrivateKey,
-    '15m'
+    `${process.env.ACCESS_TOKEN_EXPIRY}m`
   );
   return res
     .status(200)
     .cookie('accessToken', accessToken, {
       httpOnly: true,
-      expires: new Date(Date.now() + 15 * 60 * 1000),
+      expires: new Date(
+        Date.now() + parseInt(process.env.ACCESS_TOKEN_EXPIRY) * 60 * 1000
+      ),
     })
     .json(new SuccessResponse(res, null, accessToken));
 });
