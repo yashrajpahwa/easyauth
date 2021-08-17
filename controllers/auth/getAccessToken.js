@@ -17,7 +17,13 @@ const getAccessToken = asyncHandler(async (req, res, next) => {
     sessionAccessTokenPrivateKey,
     '15m'
   );
-  return res.status(200).json(new SuccessResponse(res, null, accessToken));
+  return res
+    .status(200)
+    .cookie('accessToken', accessToken, {
+      httpOnly: true,
+      expires: new Date(Date.now() + 15 * 60 * 1000),
+    })
+    .json(new SuccessResponse(res, null, accessToken));
 });
 
 module.exports = getAccessToken;

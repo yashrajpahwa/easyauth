@@ -1,4 +1,4 @@
-const { ObjectId } = require('bson');
+const { ObjectId } = require('mongodb');
 const { validationResult } = require('express-validator');
 const asyncHandler = require('../../middlewares/async');
 const mongoUtil = require('../../utils/mongoUtil');

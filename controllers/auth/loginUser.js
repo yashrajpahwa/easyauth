@@ -38,11 +38,17 @@ const loginUser = asyncHandler(async (req, res, next) => {
     sessionTokenPayload,
     sessionTokenPrivateKey
   );
-  return res.status(200).json(
-    new SuccessResponse(res, 'You are logged in', {
-      token: sessionToken,
+  return res
+    .status(200)
+    .cookie('sessionToken', sessionToken, {
+      httpOnly: true,
+      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     })
-  );
+    .json(
+      new SuccessResponse(res, 'You are logged in', {
+        token: sessionToken,
+      })
+    );
 });
 
 module.exports = loginUser;
