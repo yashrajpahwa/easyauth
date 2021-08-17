@@ -1,4 +1,3 @@
-const { validationResult } = require('express-validator');
 const asyncHandler = require('../../middlewares/async');
 const getUserDetails = require('../../utils/getUserDetails');
 const signToken = require('../../utils/signToken');
