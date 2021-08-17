@@ -9,6 +9,7 @@ const checkEnv = require('./utils/checkEnv');
 // Import middlewares
 const helmet = require('helmet');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
 const errorHandler = require('./middlewares/errors');
 
@@ -47,6 +48,9 @@ app.use(Sentry.Handlers.requestHandler({ ip: true }));
 // TracingHandler creates a trace for every incoming request
 app.use(Sentry.Handlers.tracingHandler());
 
+// Use cookie parser
+app.use(cookieParser());
+
 // Use CORS
 app.use(cors());
 
@@ -77,16 +81,16 @@ app.use(errorHandler);
 
 const port = process.env.PORT || 5000;
 
-app.listen(port, () =>
-  console.log(`Listening on port ${port} in ${process.env.NODE_ENV} mode`)
-);
-mongoUtil.connectMongoDB();
+const server = app.listen(port, () => {
+  console.log(`Listening on port ${port} in ${process.env.NODE_ENV} mode`);
+  mongoUtil.connectMongoDB();
+});
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
   console.error(`Error [UHP]: ${err.message}`);
   // Close server connection
-  process.exit(1);
+  server.close(() => process.exit(1));
 });
 
 // End all
