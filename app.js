@@ -27,11 +27,16 @@ dotenv.config(envOptions);
 checkEnv(process.env);
 
 // Initialize Sentry
+const sentryIntegrations = {};
+
+if (process.env.SENTRY_SHOULD_TRACE === 'true')
+  sentryIntegrations.tracing = true;
+
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   integrations: [
     // enable HTTP calls tracing
-    new Sentry.Integrations.Http({ tracing: process.env.SENTRY_SHOULD_TRACE }),
+    new Sentry.Integrations.Http(sentryIntegrations),
     // enable Express.js middleware tracing
     new Tracing.Integrations.Express({ app }),
   ],
@@ -39,8 +44,12 @@ Sentry.init({
   // Set tracesSampleRate to 1.0 to capture 100%
   // of transactions for performance monitoring.
   // We recommend adjusting this value in production
-  tracesSampleRate: process.env.SENTRY_TRACES_SAMPLE_RATE,
+  tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE),
 });
+
+const sentryRequestHandlerOpts = {};
+if (process.env.SENTRY_COLLECT_IP === 'true')
+  sentryRequestHandlerOpts.ip = true;
 
 // RequestHandler creates a separate execution context using domains, so that every
 // transaction/span/breadcrumb is attached to its own Hub instance

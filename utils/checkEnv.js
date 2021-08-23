@@ -35,9 +35,6 @@ const checkEnv = (environment) => {
   ) {
     throw new Error('Please enter valid values for the environment variables');
   }
-
-  console.log(parseFloat(SENTRY_TRACES_SAMPLE_RATE));
-
   const strBools = ['true', 'false'];
   if (
     !strBools.includes(SENTRY_COLLECT_IP) ||
@@ -50,19 +47,23 @@ const checkEnv = (environment) => {
 
   if (isInteger(REDIS_PORT) === false)
     throw new Error('REDIS_PORT should be an integer');
+
   if (isInteger(SESSION_TOKEN_EXPIRY) === false)
     throw new Error('SESSION_TOKEN_EXPIRY should be an integer');
+
   if (isInteger(ACCESS_TOKEN_EXPIRY) === false)
     throw new Error('ACCESS_TOKEN_EXPIRY should be an integer');
 
-  if (parseInt(ACCESS_TOKEN_EXPIRY) < 1 || parseInt(SESSION_TOKEN_EXPIRY) < 1) {
-    throw new Error('Minimum value of ACCESS_TOKEN_EXPIRY should be 1');
-  }
-  if (parseInt(ACCESS_TOKEN_EXPIRY) > 60) {
+  if (parseInt(ACCESS_TOKEN_EXPIRY) < 1 || parseInt(SESSION_TOKEN_EXPIRY) < 1)
+    throw new Error('Minimum value of _TOKEN_EXPIRY should be 1');
+
+  if (parseFloat(SENTRY_TRACES_SAMPLE_RATE) > 1.0)
+    throw new Error('Value of SENTRY_TRACES_SAMPLE_RATE is 1.0');
+
+  if (parseInt(ACCESS_TOKEN_EXPIRY) > 60)
     console.log(
       new Warning('TokenExpiryTooLong', 'Access tokens should be short lived')
     );
-  }
 };
 
 module.exports = checkEnv;
