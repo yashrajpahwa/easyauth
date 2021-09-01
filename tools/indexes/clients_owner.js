@@ -19,7 +19,7 @@ async function connect() {
   try {
     await client.connect();
     const db = client.db('main');
-    let result = await db.collection('users').createIndex({ email: 1 });
+    let result = await db.collection('clients').createIndex({ owner: 1 });
     console.log(`Index created: ${result}`);
   } catch (err) {
     console.error(`we encountered ${err}`);
