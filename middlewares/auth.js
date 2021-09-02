@@ -2,6 +2,7 @@ const verifyToken = require('../utils/verifyToken');
 const asyncHandler = require('./async');
 const fs = require('fs');
 const getCookies = require('../utils/getCookies');
+const DeveloperOnlyError = require('../classes/DeveloperOnlyError');
 const sessionAccessTokenPublicKey = fs.readFileSync(
   'config/sessionAccessTokenKeys/public.key'
 );
@@ -56,5 +57,16 @@ exports.validateUserSession = asyncHandler(async (req, res, next) => {
     return next({ name: 'NoSessionToken' });
   }
   req.sessionToken = sessionToken;
+  next();
+});
+
+exports.developersOnly = asyncHandler(async (req, res, next) => {
+  const { accessTokenPayload } = req;
+  if (!accessTokenPayload) {
+    throw new Error('Payload is undefined');
+  }
+  if (accessTokenPayload.isDeveloper !== true) {
+    throw new DeveloperOnlyError('Only developers can access this route');
+  }
   next();
 });

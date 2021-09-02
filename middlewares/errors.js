@@ -1,13 +1,15 @@
+const DeveloperOnlyError = require('../classes/DeveloperOnlyError');
 const ErrorResponse = require('../utils/errorResponse');
 
 const errorHandler = (err, req, res, next) => {
   let error = { ...err };
+  const isDev = process.env.NODE_ENV === 'development';
 
   error.message = err.message;
 
   // log to console for developer
-  if (process.env.NODE_ENV === 'development') {
-    console.log(err);
+  if (isDev) {
+    console.error(err);
   }
   if (error.name === 'TokenRevokedError') {
     error.message = 'Token has been revoked by the user';
@@ -36,6 +38,17 @@ const errorHandler = (err, req, res, next) => {
   if (error.name === 'OnboardingIncomplete') {
     error.message = 'Please complete the onboarding to proceed';
     error.statusCode = 403;
+  }
+
+  if (err instanceof DeveloperOnlyError) {
+    error.message = 'This route can only be accessed by developers';
+    error.statusCode = 401;
+  }
+
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    if (!isDev) console.error(err);
+    error.message = 'Invalid syntax in body';
+    error.statusCode = 400;
   }
 
   res
