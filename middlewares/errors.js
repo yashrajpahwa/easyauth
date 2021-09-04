@@ -15,6 +15,10 @@ const errorHandler = (err, req, res, next) => {
     error.message = 'Token has been revoked by the user';
     error.statusCode = 401;
   }
+  if (error.name === 'NoDataFound') {
+    error.message = 'No records found';
+    error.statusCode = 404;
+  }
   if (error.name === 'NoAccessToken') {
     error.message = 'Please provide an access token';
     error.statusCode = 400;

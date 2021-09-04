@@ -1,10 +1,13 @@
 const express = require('express');
 const { body, query } = require('express-validator');
+const getClient = require('../controllers/client/getClient');
 const getClients = require('../controllers/client/getClients');
 const registerClient = require('../controllers/client/registerClient');
 const updateClient = require('../controllers/client/updateClient');
 const { protectUserAuth, developersOnly } = require('../middlewares/auth');
 const router = express.Router();
+
+router.route('/:id').get(protectUserAuth, developersOnly, getClient);
 
 router
   .route('/')

@@ -21,6 +21,7 @@ const app = express();
 
 // Configure dotenv
 const envOptions = require('./config/envOptions');
+const useMongo = require('./middlewares/useMongo');
 dotenv.config(envOptions);
 
 // Check environment variables
@@ -83,13 +84,7 @@ app.use(express.json());
 // Sanitize mongodb data
 app.use(mongoSanitize());
 
-app.use((req, res, next) => {
-  if (!mongoUtil.getDB()) {
-    res.send(new ErrorResponse('Connecting to network', res));
-  } else {
-    next();
-  }
-});
+app.use(useMongo);
 
 app.use('/api/v1', routes);
 
